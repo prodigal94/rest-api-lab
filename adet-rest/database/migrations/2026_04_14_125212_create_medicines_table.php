@@ -13,13 +13,9 @@ return new class extends Migration
     {
         Schema::create('medicines', function (Blueprint $table) {
             $table->id();
-            $table->string('sku')->unique();
             $table->string('name');
-            $table->string('category')->nullable();
             $table->integer('stock_quantity')->default(0);
             $table->decimal('unit_price', 10, 2);
-            $table->date('expiry_date')->nullable();
-            $table->string('manufacturer')->nullable();
             $table->timestamps();
         });
     }
