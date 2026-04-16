@@ -26,7 +26,12 @@ class PatientController extends Controller
             'name' => 'required|string',
             'age' => 'required|integer',
             'contact_number' => 'required',
+            'gender' => 'sometimes|string|nullable',
         ]);
+
+        if (empty($validated['gender'])) {
+            $validated['gender'] = 'Not specified';
+        }
 
         $patient = Patient::create($validated);
 
@@ -52,19 +57,12 @@ class PatientController extends Controller
      */
     public function update(Request $request, Patient $patient)
     {
-        /*
-            $table->string('name');
-            $table->integer('age');
-            $table->string('gender');
-            $table->string('contact_number');
-            $table->string('status')->default('Admitted');
-        */
         $validatedData = $request->validate([
             'name' => 'sometimes|string|max:255',
             'age' => 'sometimes|integer',
             'gender' => 'sometimes|in:Male,Female',
             'contact_number' => 'sometimes|string|max:11',
-            'unit_price' => 'sometimes|in:Admitted,Outpatient,Discharged',
+            'status' => 'sometimes|in:Admitted,Outpatient,Discharged',
         ]);
 
         $patient->update($validatedData);

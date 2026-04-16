@@ -29,7 +29,7 @@ class MedicineController extends Controller
 
         $medicine = Medicine::create($data);
 
-        return response()->json($medicine, 201); // 201 means "Created"
+        return response()->json($medicine, 201);
     }
 
     /**
