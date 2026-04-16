@@ -71,7 +71,7 @@ class MedicineController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Product deleted successfully'
+            'message' => 'Medicine deleted successfully'
         ], 200);
     }
 }
