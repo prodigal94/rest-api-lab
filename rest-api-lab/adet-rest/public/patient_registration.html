@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Registration System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        form {
+            display: grid;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        input, select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 150px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        button {
+            padding: 10px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        #patients {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .patient-card {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .patient-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .patient-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .patient-card p {
+            color: #666;
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .patient-id {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        .patient-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-admitted {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-outpatient {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .status-discharged {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Patient Registration System</h1>
+        <div id="status"></div>
+
+        <!-- Register New Patient -->
+        <div class="section">
+            <h2>➕ Register New Patient</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <input type="text" id="patient_number" placeholder="Patient Number" required>
+                    <input type="text" id="name" placeholder="Full Name" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="age" placeholder="Age" required min="0" max="150">
+                    <input type="text" id="contact_number" placeholder="Contact Number" required>
+                </div>
+                <button type="submit">Register Patient</button>
+            </form>
+        </div>
+
+        <!-- View All Patients -->
+        <div class="section">
+            <h2>👥 All Patients</h2>
+            <button class="secondary" id="loadPatients">Load Patients</button>
+            <div id="patients"></div>
+        </div>
+
+        <!-- Update Patient -->
+        <div class="section">
+            <h2>✏️ Update Patient Information</h2>
+            <form id="updateForm">
+                <div class="form-group">
+                    <input type="number" id="update_id" placeholder="Patient ID" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="update_name" placeholder="Name (optional)">
+                    <input type="number" id="update_age" placeholder="Age (optional)" min="0" max="150">
+                </div>
+                <div class="form-group">
+                    <select id="update_gender">
+                        <option value="">Select Gender (optional)</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <input type="text" id="update_contact" placeholder="Contact Number (optional)">
+                </div>
+                <div class="form-group">
+                    <select id="update_status">
+                        <option value="">Select Status (optional)</option>
+                        <option value="Admitted">Admitted</option>
+                        <option value="Outpatient">Outpatient</option>
+                        <option value="Discharged">Discharged</option>
+                    </select>
+                </div>
+                <button type="submit">Update Patient</button>
+            </form>
+        </div>
+
+        <!-- Delete Patient -->
+        <div class="section">
+            <h2>🗑️ Delete Patient</h2>
+            <form id="deleteForm">
+                <div class="form-group">
+                    <input type="number" id="delete_id" placeholder="Patient ID" required>
+                    <button type="submit" class="danger">Delete Patient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://127.0.0.1:8000/api/patients';
+        const statusDiv = document.getElementById('status');
+
+        function showStatus(message, type) {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => statusDiv.innerHTML = '', 5000);
+        }
+
+        function getStatusBadge(status) {
+            const statusMap = {
+                'Admitted': 'status-admitted',
+                'Outpatient': 'status-outpatient',
+                'Discharged': 'status-discharged'
+            };
+            const badgeClass = statusMap[status] || 'status-outpatient';
+            return `<span class="status-badge ${badgeClass}">${status || 'N/A'}</span>`;
+        }
+
+        // Register Patient
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                patient_number: document.getElementById('patient_number').value,
+                name: document.getElementById('name').value,
+                age: parseInt(document.getElementById('age').value),
+                contact_number: document.getElementById('contact_number').value
+            };
+            try {
+                const response = await fetch(BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    showStatus('✓ Patient registered successfully!', 'success');
+                    document.getElementById('registerForm').reset();
+                    loadPatients();
+                } else {
+                    const error = await response.json();
+                    showStatus('✗ Error: ' + JSON.stringify(error.message || error), 'error');
+                }
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Load Patients
+        document.getElementById('loadPatients').addEventListener('click', loadPatients);
+
+        async function loadPatients() {
+            try {
+                const response = await fetch(BASE_URL);
+                const patients = await response.json();
+                const container = document.getElementById('patients');
+                container.innerHTML = '';
+                if (patients.length === 0) {
+                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No patients registered yet</p>';
+                    return;
+                }
+                patients.forEach(patient => {
+                    const card = document.createElement('div');
+                    card.className = 'patient-card';
+                    card.innerHTML = `
+                        <div class="patient-header">
+                            <div class="patient-id">ID: ${patient.id} | ${patient.patient_number}</div>
+                            ${getStatusBadge(patient.status)}
+                        </div>
+                        <h3>${patient.name}</h3>
+                        <p><strong>Age:</strong> ${patient.age} years</p>
+                        <p><strong>Gender:</strong> ${patient.gender || 'Not specified'}</p>
+                        <p><strong>Contact:</strong> ${patient.contact_number}</p>
+                        <p><strong>Registered:</strong> ${new Date(patient.created_at).toLocaleDateString()}</p>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                showStatus('✗ Error loading patients: ' + error.message, 'error');
+            }
+        }
+
+        // Update Patient
+        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('update_id').value;
+            const data = {};
+            const name = document.getElementById('update_name').value;
+            const age = document.getElementById('update_age').value;
+            const gender = document.getElementById('update_gender').value;
+            const contact = document.getElementById('update_contact').value;
+            const status = document.getElementById('update_status').value;
+            if (name) data.name = name;
+            if (age) data.age = parseInt(age);
+            if (gender) data.gender = gender;
+            if (contact) data.contact_number = contact;
+            if (status) data.status = status;
+
+            if (Object.keys(data).length === 0) {
+                showStatus('⚠️ Please fill in at least one field to update', 'info');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/${id}?_method=PUT`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    showStatus('✓ Patient updated successfully!', 'success');
+                    document.getElementById('updateForm').reset();
+                    loadPatients();
+                } else {
+                    const error = await response.json();
+                    showStatus('✗ Error: ' + JSON.stringify(error.message || error), 'error');
+                }
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Delete Patient
+        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('delete_id').value;
+            if (!confirm(`Are you sure you want to delete patient ID ${id}? This action cannot be undone.`)) return;
+            try {
+                const response = await fetch(`${BASE_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    showStatus('✓ Patient deleted successfully!', 'success');
+                    document.getElementById('deleteForm').reset();
+                    loadPatients();
+                } else {
+                    const error = await response.json();
+                    showStatus('✗ Error: ' + JSON.stringify(error.message || error), 'error');
+                }
+            } catch (error) {
+                showStatus('✗ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Load patients on page load
+        loadPatients();
+    </script>
+</body>
+</html>
