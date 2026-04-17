@@ -8,11 +8,23 @@ Open the patient registration page in your browser after starting the Laravel se
 
 - `http://127.0.0.1:8000/patient_registration.html`
 
-The HTML client is located at `adet-rest/public/patient_registration.html`.
+The HTML client is located at `src/server/public/patient_registration.html`.
+
+## Setting up the database
+
+Edit the `src/server/.env` file with the appropriate details:
+
+From the `src/server/` directory, run the database migrations:
+
+```bash
+php artisan migrate
+```
+
+Use `migrate:fresh` to start from scratch. 
 
 ## Running Locally
 
-From the `adet-rest` directory, start the Laravel development server:
+From the `src/server/` directory, start the Laravel development server:
 
 ```bash
 php artisan serve
