@@ -1,6 +1,6 @@
 # ReST API Demo
 
-This project includes a REST API backend, a Python client for medicine inventory, and an HTML client for patient registration.
+This project includes a REST API backend, a Python Flask web app for pharmacy inventory, an HTML page for that pharmacy web app, and an HTML client for patient registration.
 
 ## HTML Client
 
@@ -14,19 +14,31 @@ The HTML client sends requests to:
 
 ## Python Client
 
-The Python medicine client is located at:
+The Python pharmacy web client is located at:
 
-- `src/client/pharmacy_inventory.py`
+- `src/client/pharmacy_web.py`
 
 From the `src/client/` directory, run:
 
 ```powershell
-python pharmacy_inventory.py
+python pharmacy_web.py
 ```
 
-The Python client sends requests to:
+Then open:
+
+- `http://127.0.0.1:5000`
+
+The Python web client sends requests to:
+
+- `http://127.0.0.1:5000/api/medicines`
+
+It proxies those requests to the Laravel API at:
 
 - `http://127.0.0.1:8000/api/medicines`
+
+The pharmacy HTML page used by the Python web client is located at:
+
+- `src/client/pharmacy_inventory.html`
 
 ## Setting up the database
 
@@ -66,7 +78,8 @@ php artisan serve
 Then:
 
 - open `src/client/patient_registration.html` in your browser
-- run `python pharmacy_inventory.py` from `src/client/`
+- run `python pharmacy_web.py` from `src/client/`
+- open `http://127.0.0.1:5000` for the pharmacy web app
 
 The Laravel API runs by default at:
 
