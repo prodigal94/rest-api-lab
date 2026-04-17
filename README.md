@@ -1,34 +1,73 @@
 # ReST API Demo
 
-This project includes a REST API backend and a simple HTML client for patient registration.
+This project includes a REST API backend, a Python client for medicine inventory, and an HTML client for patient registration.
 
 ## HTML Client
 
 Open the patient registration page in your browser after starting the Laravel server:
 
-- `http://127.0.0.1:8000/patient_registration.html`
+- `src/client/patient_registration.html`
 
-The HTML client is located at `src/server/public/patient_registration.html`.
+The HTML client sends requests to:
+
+- `http://127.0.0.1:8000/api/patients`
+
+## Python Client
+
+The Python medicine client is located at:
+
+- `src/client/pharmacy_inventory.py`
+
+From the `src/client/` directory, run:
+
+```powershell
+python pharmacy_inventory.py
+```
+
+The Python client sends requests to:
+
+- `http://127.0.0.1:8000/api/medicines`
 
 ## Setting up the database
 
 Edit the `src/server/.env` file with the appropriate details:
 
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=hospitaldb
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Create the database in MySQL if it does not already exist:
+
+```sql
+CREATE DATABASE hospitaldb;
+```
+
 From the `src/server/` directory, run the database migrations:
 
-```bash
+```powershell
 php artisan migrate
 ```
 
-Use `migrate:fresh` to start from scratch. 
+Use `migrate:fresh` to start from scratch.
 
 ## Running Locally
 
 From the `src/server/` directory, start the Laravel development server:
 
-```bash
+```powershell
 php artisan serve
 ```
 
-Then visit the patient registration page at the URL above.
+Then:
 
+- open `src/client/patient_registration.html` in your browser
+- run `python pharmacy_inventory.py` from `src/client/`
+
+The Laravel API runs by default at:
+
+- `http://127.0.0.1:8000`
