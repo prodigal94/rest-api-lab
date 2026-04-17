@@ -30,18 +30,7 @@ class PrescriptionController extends Controller
             'prescription_date' => 'sometimes|date',
         ]);
 
-        // Reduce the stock of medicine after prescription is validated
-        $prescription = DB::transaction(function () use ($validated) {
-            $medicine = Medicine::findOrFail($validated['medicine_id']);
-            
-            if ($medicine->stock_quantity < $validated['quantity_dispensed']) {
-                throw new \Exception("Insufficient stock for {$medicine->name}");
-            }
-            
-            $medicine->decrement('stock_quantity', $validated['quantity_dispensed']);
-            
-            return Prescription::create($validated);
-        });
+        $prescription = Prescription::create($validated);
 
         return response()->json([
             'message' => 'Prescription created successfully',

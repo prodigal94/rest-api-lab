@@ -1,368 +1,55 @@
-from flask import Flask, render_template_string, jsonify, request
+import os
+from pathlib import Path
+
+from flask import Flask, Response, jsonify, request
 import requests
+
 
 app = Flask(__name__)
 
-BASE_API = "http://127.0.0.1:8000/api/medicines"
+API_BASE = os.getenv("PHARMACY_API_BASE", "http://127.0.0.1:8000/api")
+HTML_FILE = Path(__file__).resolve().parent / "pharmacy_inventory.html"
 
-HTML_TEMPLATE = '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Inventory System</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            padding: 30px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 10px;
-        }
-        h2 {
-            color: #667eea;
-            margin-top: 30px;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-        }
-        .section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-left: 4px solid #667eea;
-        }
-        form {
-            display: grid;
-            gap: 15px;
-        }
-        .form-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        input, select {
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            flex: 1;
-            min-width: 150px;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
-        }
-        button {
-            padding: 10px 25px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background: #764ba2;
-        }
-        button.secondary {
-            background: #6c757d;
-        }
-        button.secondary:hover {
-            background: #5a6268;
-        }
-        #medicines {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .medicine-card {
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        .medicine-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-        .medicine-card h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .medicine-card p {
-            color: #666;
-            margin: 8px 0;
-            font-size: 14px;
-        }
-        .medicine-id {
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 10px;
-        }
-        .status {
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>💊 Pharmacy Inventory Management System</h1>
-        <div id="status"></div>
 
-        <!-- Add Medicine -->
-        <div class="section">
-            <h2>➕ Add New Medicine</h2>
-            <form id="addForm">
-                <div class="form-group">
-                    <input type="text" id="name" placeholder="Medicine Name" required>
-                    <input type="number" id="stock_quantity" placeholder="Stock Quantity" required min="0">
-                    <input type="number" id="unit_price" placeholder="Unit Price" required step="0.01" min="0">
-                    <button type="submit">Add Medicine</button>
-                </div>
-            </form>
-        </div>
+def proxy_request(path):
+    target_url = f"{API_BASE}/{path}"
+    headers = {"Accept": "application/json"}
+    if request.method in {"POST", "PUT"}:
+        headers["Content-Type"] = "application/json"
 
-        <!-- View All Medicines -->
-        <div class="section">
-            <h2>📋 All Medicines</h2>
-            <button class="secondary" id="loadBtn">Load Medicines</button>
-            <div id="medicines"></div>
-        </div>
+    response = requests.request(
+        method=request.method,
+        url=target_url,
+        json=request.get_json(silent=True),
+        headers=headers,
+        timeout=15,
+    )
+    return jsonify(response.json()), response.status_code
 
-        <!-- Update Medicine -->
-        <div class="section">
-            <h2>✏️ Update Medicine</h2>
-            <form id="updateForm">
-                <div class="form-group">
-                    <input type="number" id="update_id" placeholder="Medicine ID" required>
-                </div>
-                <div class="form-group">
-                    <input type="text" id="update_name" placeholder="New Name (optional)">
-                    <input type="number" id="update_stock" placeholder="New Stock (optional)" min="0">
-                    <input type="number" id="update_price" placeholder="New Price (optional)" step="0.01" min="0">
-                    <button type="submit">Update</button>
-                </div>
-            </form>
-        </div>
 
-        <!-- Delete Medicine -->
-        <div class="section">
-            <h2>🗑️ Delete Medicine</h2>
-            <form id="deleteForm">
-                <div class="form-group">
-                    <input type="number" id="delete_id" placeholder="Medicine ID" required>
-                    <button type="submit" style="background: #dc3545;">Delete</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        const BASE_URL = '/api/medicines';
-        const statusDiv = document.getElementById('status');
-
-        function showStatus(message, type) {
-            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
-            setTimeout(() => statusDiv.innerHTML = '', 5000);
-        }
-
-        // Add Medicine
-        document.getElementById('addForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                name: document.getElementById('name').value,
-                stock_quantity: parseInt(document.getElementById('stock_quantity').value),
-                unit_price: parseFloat(document.getElementById('unit_price').value)
-            };
-            try {
-                const response = await fetch(BASE_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (response.ok) {
-                    showStatus('✓ Medicine added successfully!', 'success');
-                    document.getElementById('addForm').reset();
-                    loadMedicines();
-                } else {
-                    const error = await response.json();
-                    showStatus('✗ Error: ' + JSON.stringify(error), 'error');
-                }
-            } catch (error) {
-                showStatus('✗ Error: ' + error.message, 'error');
-            }
-        });
-
-        // Load Medicines
-        document.getElementById('loadBtn').addEventListener('click', loadMedicines);
-
-        async function loadMedicines() {
-            try {
-                const response = await fetch(BASE_URL);
-                const medicines = await response.json();
-                const container = document.getElementById('medicines');
-                container.innerHTML = '';
-                if (medicines.length === 0) {
-                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999;">No medicines found</p>';
-                    return;
-                }
-                medicines.forEach(med => {
-                    const card = document.createElement('div');
-                    card.className = 'medicine-card';
-                    card.innerHTML = `
-                        <div class="medicine-id">ID: ${med.id}</div>
-                        <h3>${med.name}</h3>
-                        <p><strong>Stock:</strong> ${med.stock_quantity} units</p>
-                        <p><strong>Price:</strong> $${med.unit_price.toFixed(2)}</p>
-                        <p><strong>Created:</strong> ${new Date(med.created_at).toLocaleDateString()}</p>
-                    `;
-                    container.appendChild(card);
-                });
-            } catch (error) {
-                showStatus('✗ Error loading medicines: ' + error.message, 'error');
-            }
-        }
-
-        // Update Medicine
-        document.getElementById('updateForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('update_id').value;
-            const data = {};
-            const name = document.getElementById('update_name').value;
-            const stock = document.getElementById('update_stock').value;
-            const price = document.getElementById('update_price').value;
-            if (name) data.name = name;
-            if (stock) data.stock_quantity = parseInt(stock);
-            if (price) data.unit_price = parseFloat(price);
-            
-            if (Object.keys(data).length === 0) {
-                showStatus('⚠️ Please fill in at least one field to update', 'info');
-                return;
-            }
-            try {
-                const response = await fetch(`${BASE_URL}/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (response.ok) {
-                    showStatus('✓ Medicine updated successfully!', 'success');
-                    document.getElementById('updateForm').reset();
-                    loadMedicines();
-                } else {
-                    const error = await response.json();
-                    showStatus('✗ Error: ' + JSON.stringify(error), 'error');
-                }
-            } catch (error) {
-                showStatus('✗ Error: ' + error.message, 'error');
-            }
-        });
-
-        // Delete Medicine
-        document.getElementById('deleteForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('delete_id').value;
-            if (!confirm(`Are you sure you want to delete medicine ID ${id}?`)) return;
-            try {
-                const response = await fetch(`${BASE_URL}/${id}`, {
-                    method: 'DELETE'
-                });
-                if (response.ok) {
-                    showStatus('✓ Medicine deleted successfully!', 'success');
-                    document.getElementById('deleteForm').reset();
-                    loadMedicines();
-                } else {
-                    const error = await response.json();
-                    showStatus('✗ Error: ' + JSON.stringify(error), 'error');
-                }
-            } catch (error) {
-                showStatus('✗ Error: ' + error.message, 'error');
-            }
-        });
-
-        // Load medicines on page load
-        loadMedicines();
-    </script>
-</body>
-</html>
-'''
-
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    return Response(HTML_FILE.read_text(encoding="utf-8"), mimetype="text/html")
 
-@app.route('/api/medicines', methods=['GET', 'POST'])
+
+@app.route("/api/medicines", methods=["GET", "POST"])
 def medicines():
     try:
-        if request.method == 'GET':
-            response = requests.get(BASE_API)
-            return jsonify(response.json())
-        
-        elif request.method == 'POST':
-            data = request.get_json()
-            response = requests.post(BASE_API, json=data)
-            return jsonify(response.json()), response.status_code
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return proxy_request("medicines")
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
 
-@app.route('/api/medicines/<int:med_id>', methods=['PUT', 'DELETE'])
-def medicine_detail(med_id):
+
+@app.route("/api/medicines/<int:record_id>", methods=["GET", "PUT", "DELETE"])
+def medicine_detail(record_id):
     try:
-        if request.method == 'PUT':
-            data = request.get_json()
-            response = requests.put(f"{BASE_API}/{med_id}", json=data)
-            return jsonify(response.json()), response.status_code
-        
-        elif request.method == 'DELETE':
-            response = requests.delete(f"{BASE_API}/{med_id}")
-            return jsonify(response.json()), response.status_code
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return proxy_request(f"medicines/{record_id}")
+    except Exception as error:
+        return jsonify({"error": str(error)}), 500
 
-if __name__ == '__main__':
-    print("Starting Pharmacy Inventory System...")
+
+if __name__ == "__main__":
+    print("Starting Pharmacy Inventory Web App...")
     print("Open your browser to: http://127.0.0.1:5000")
+    print(f"Proxying Laravel API at: {API_BASE}")
     app.run(debug=True, port=5000)
